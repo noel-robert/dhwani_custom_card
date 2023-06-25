@@ -1,90 +1,6 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter_svg/flutter_svg.dart';
-//
-// void main() {
-//   runApp(const MyApp());
-// }
-//
-// class MyApp extends StatelessWidget {
-//   const MyApp({super.key});
-//
-//   // This widget is the root of your application.
-//   @override
-//   Widget build(BuildContext context) {
-//     return const MaterialApp(
-//       home: MyHomePage(),
-//     );
-//   }
-// }
-//
-// class MyHomePage extends StatefulWidget {
-//   const MyHomePage({Key? key}): super(key: key);
-//
-//   @override
-//   _MyHomePageState createState() => _MyHomePageState();
-// }
-//
-// class _MyHomePageState extends State<MyHomePage> {
-//   List<String> image = [
-//     'assets/images/A.svg', 'assets/images/B.svg', 'assets/images/C.svg', 'assets/images/D.svg'];
-//   List<String> title = ['A', 'B', 'C', 'D'];
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//         appBar: AppBar(
-//           title: const Text("Dhwani HomePage"),
-//         ),
-//         body: GridView.builder(
-//           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-//             crossAxisCount: 2,
-//             mainAxisSpacing: 10,
-//             crossAxisSpacing: 10,
-//           ),
-//           itemCount: image.length,
-//           itemBuilder: (BuildContext context, int index) {
-//             return card(image[index], title[index], context);
-//           },
-//         )
-//     );
-//   }
-// }
-//
-// Widget card(String image, String title, BuildContext context) {
-//   return Card(
-//     color: Colors.yellow[50],
-//     elevation: 8.0,
-//     margin: const EdgeInsets.all(4.0),
-//     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-//     child: Column(
-//       children: [
-//         Padding(
-//           padding: const EdgeInsets.all(8.0),
-//           child: SvgPicture.asset(image, height: MediaQuery.of(context).size.width * (1/4), width: MediaQuery.of(context).size.width)
-//         ),
-//         Text(
-//           title,
-//           style: const TextStyle(
-//             fontSize: 12.0,
-//             fontWeight: FontWeight.w700
-//           )
-//         )
-//       ],
-//     ),
-//   );
-// }
-//
-// class customCard {
-//   String? image;
-//   String? title;
-//   BuildContext? context;
-//
-//   customCard({this.image, this.title, this.context})
-//   return card(image, title, context);
-// }
-
-
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'customCard.dart';
 
 void main() {
@@ -92,7 +8,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -104,35 +20,76 @@ class MyApp extends StatelessWidget {
 }
 
 class DhwaniApp_HomePage extends StatefulWidget {
-  const DhwaniApp_HomePage({Key? key}): super(key: key);
+  const DhwaniApp_HomePage({Key? key}) : super(key: key);
 
   @override
   _DhwaniApp_HomePageState createState() => _DhwaniApp_HomePageState();
 }
 
 class _DhwaniApp_HomePageState extends State<DhwaniApp_HomePage> {
-    List<String> image = ['assets/images/A.svg', 'assets/images/B.svg', 'assets/images/C.svg', 'assets/images/D.svg', 'assets/images/E.svg'];
-    List<String> title = ['A', 'B', 'C', 'D', 'E'];
+  List<String> image = [
+    'assets/images/A.svg',
+    'assets/images/B.svg',
+    'assets/images/C.svg',
+    'assets/images/D.svg',
+    'assets/images/E.svg'
+  ];
+  List<String> title = ['A', 'B', 'C', 'D', 'E'];
 
-    @override
+  List<int> clickCounts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadClickCounts();
+  }
+
+  Future<void> _loadClickCounts() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      clickCounts = title.map((t) {
+        return prefs.getInt('${t}_clickCount') ?? 0;
+      }).toList();
+    });
+  }
+
+  void _updateClickCounts() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      clickCounts = title.map((t) {
+        return prefs.getInt('${t}_clickCount') ?? 0;
+      }).toList();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-      return Scaffold(
-        appBar: AppBar(
-            title: const Text('DhwaniApp HomePage')
+    // Sort the cards based on clickCounts in descending order
+    List<int> sortedIndexes =
+        List.generate(clickCounts.length, (index) => index)
+          ..sort((a, b) => clickCounts[b].compareTo(clickCounts[a]));
+
+    List<String> sortedImages =
+        sortedIndexes.map((index) => image[index]).toList();
+    List<String> sortedTitles =
+        sortedIndexes.map((index) => title[index]).toList();
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('DhwaniApp HomePage')),
+      body: GridView.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
         ),
-        body: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10
-          ),
-          itemCount: image.length,
-          itemBuilder: (context, index) => CardWidget(
-            imagePath: image[index],
-            title: title[index],
-            isFav: false,
-          ),
+        itemCount: sortedImages.length,
+        itemBuilder: (context, index) => CardWidget(
+          imagePath: sortedImages[index],
+          title: sortedTitles[index],
+          isFav: false,
+          onUpdate: _updateClickCounts,
         ),
-      );
-    }
+      ),
+    );
+  }
 }

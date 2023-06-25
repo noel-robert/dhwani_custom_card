@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CardWidget extends StatefulWidget {
   final String imagePath;
   final String title;
   bool isFav;
+  final Function onUpdate; // Added onUpdate callback function
 
-  CardWidget({super.key, required this.imagePath, required this.title, required this.isFav});
+  CardWidget({
+    Key? key,
+    required this.imagePath,
+    required this.title,
+    required this.isFav,
+    required this.onUpdate, // Added onUpdate parameter
+  }) : super(key: key);
 
   @override
   _CardWidgetState createState() => _CardWidgetState();
@@ -14,43 +22,47 @@ class CardWidget extends StatefulWidget {
 
 class _CardWidgetState extends State<CardWidget> {
   int counter = 0;
+  late SharedPreferences _prefs;
+
+  @override
+  void initState() {
+    super.initState();
+    initSharedPreferences();
+  }
+
+  void initSharedPreferences() async {
+    _prefs = await SharedPreferences.getInstance();
+    setState(() {
+      counter = _prefs.getInt('${widget.title}_clickCount') ?? 0;
+    });
+  }
+
+  void _incrementCounter() {
+    setState(() {
+      counter++;
+      _prefs.setInt('${widget.title}_clickCount', counter);
+      //widget.onUpdate(); // Call the onUpdate callback function (real time re sorting)
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        onTap: () {
-          setState(() {
-            counter++;
-          });
-        },
+        onTap: _incrementCounter,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
               SvgPicture.asset(
-                  widget.imagePath,
-                  height: MediaQuery.of(context).size.width * (1/4),
-                  width: MediaQuery.of(context).size.width
-                  // height: 50,
-                  // width: 50,
+                widget.imagePath,
+                height: MediaQuery.of(context).size.width * (1 / 4),
+                width: MediaQuery.of(context).size.width,
               ),
               const SizedBox(height: 8.0),
               Text(widget.title),
               const SizedBox(height: 8.0),
               Text('Tapped $counter times'),
-              // const SizedBox(height: 8.0),
-              // IconButton(
-              //     onPressed: () {
-              //       setState(() {
-              //         widget.isFav = !widget.isFav;
-              //       });
-              //     },
-              //     icon: Icon(
-              //       widget.isFav ? Icons.favorite : Icons.favorite_border,
-              //       color: widget.isFav ? Colors.red : null,
-              //     )
-              // )
             ],
           ),
         ),
